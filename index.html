@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ding Ding Ding — Design Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET & TOKENS ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:       #0e0e0c;
+  --ink2:      #2a2a26;
+  --ink3:      #4a4947;
+  --muted:     #7a7870;
+  --rule:      rgba(255,255,255,0.07);
+  --rule2:     rgba(255,255,255,0.13);
+  --surface:   #161614;
+  --surface2:  #1e1e1b;
+  --surface3:  #272723;
+  --surface4:  #2f2f2a;
+  --bg:        #0e0e0c;
+  --accent:    #c8ff00;
+  --accent2:   #ff6b35;
+  --accent3:   #7eb8ff;
+  --danger:    #ff4444;
+  --success:   #3ddc84;
+  --text:      #e8e6df;
+  --text2:     #b0ada4;
+  --text3:     #7a7870;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --r:         6px;
+  --r-lg:      12px;
+}
+
+html { font-size: 15px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface4); border-radius: 2px; }
+
+/* ─── TOPBAR ─────────────────────────────────────────── */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(14,14,12,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule);
+}
+.logo {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: var(--accent);
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-bell {
+  display: flex; gap: 3px;
+}
+.logo-bell span {
+  display: block; width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: bellpop 1.8s ease-in-out infinite;
+}
+.logo-bell span:nth-child(2) { animation-delay: .15s; }
+.logo-bell span:nth-child(3) { animation-delay: .3s; }
+@keyframes bellpop {
+  0%,80%,100% { transform: scale(1); opacity:.6; }
+  40% { transform: scale(1.5); opacity: 1; }
+}
+.logo-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--text3);
+  letter-spacing: .06em;
+}
+.topbar-right {
+  display: flex; align-items: center; gap: 12px;
+}
+#client-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+#api-status {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--danger);
+  cursor: pointer;
+  transition: background .3s;
+  position: relative;
+}
+#api-status.ok { background: var(--success); }
+#api-status:hover::after {
+  content: attr(data-tip);
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  background: var(--surface3);
+  color: var(--text2);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 4px 8px;
+  border-radius: var(--r);
+  white-space: nowrap;
+  pointer-events: none;
+  border: 1px solid var(--rule2);
+}
+.btn {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all .15s;
+  border: 1px solid var(--rule2);
+  background: var(--surface3);
+  color: var(--text);
+  letter-spacing: .01em;
+}
+.btn:hover { background: var(--surface4); border-color: var(--rule2); }
+.btn.primary {
+  background: var(--accent);
+  color: var(--ink);
+  border-color: transparent;
+  font-weight: 600;
+}
+.btn.primary:hover { background: #d4ff20; }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+.btn-sm { font-size: 12px; padding: 5px 10px; }
+
+/* ─── MAIN LAYOUT ────────────────────────────────────── */
+#app {
+  padding-top: 52px;
+  display: flex;
+  height: 100vh;
+}
+
+/* ─── SIDEBAR ────────────────────────────────────────── */
+#sidebar {
+  width: 260px;
+  min-width: 260px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  border-right: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.sidebar-section {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.sidebar-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* Intake form */
+#intake-area {
+  width: 100%;
+  min-height: 120px;
+  background: var(--surface2);
+  border: 1px solid var(--rule2);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.6;
+  padding: 10px 12px;
+  resize: vertical;
+  transition: border-color .2s;
+}
+#intake-area:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+#intake-area::placeholder { color: var(--text3); font-style: italic; }
+#parse-btn {
+  width: 100%;
+  margin-top: 10px;
+  justify-content: center;
+  display: flex; align-items: center; gap: 8px;
+}
+#parse-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 8px;
+  min-height: 16px;
+}
+
+/* API key */
+#api-key-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--rule2);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 7px 10px;
+  letter-spacing: .03em;
+}
+#api-key-input:focus { outline: none; border-color: var(--accent); }
+#api-key-input::placeholder { color: var(--text3); }
+#api-key-save { width: 100%; margin-top: 8px; justify-content: center; display: flex; }
+
+/* Phase filter */
+.phase-filter {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.phase-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: var(--r);
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--text2);
+  transition: all .12s;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: var(--font-body);
+}
+.phase-btn:hover { background: var(--surface2); }
+.phase-btn.active { background: var(--surface3); color: var(--text); border-color: var(--rule2); }
+.phase-btn .phase-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  margin-right: 8px; flex-shrink: 0;
+}
+.phase-btn .phase-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  background: var(--surface3);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* ─── MAIN KANBAN ────────────────────────────────────── */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#kanban-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--rule);
+  flex-shrink: 0;
+}
+.kanban-title {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--text2);
+}
+#kanban-board {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding: 20px 24px;
+  align-items: flex-start;
+}
+
+/* ─── KANBAN COLUMNS ─────────────────────────────────── */
+.kb-col {
+  min-width: 200px;
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-right: 16px;
+}
+.kb-col-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--rule2);
+  margin-bottom: 4px;
+}
+.kb-col-name {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  display: flex; align-items: center; gap: 8px;
+}
+.col-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+.kb-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  background: var(--surface3);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* ─── CLIENT CARDS ───────────────────────────────────── */
+.kb-card {
+  background: var(--surface2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 13px 14px;
+  cursor: pointer;
+  transition: border-color .15s, transform .1s;
+  position: relative;
+  overflow: hidden;
+}
+.kb-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.kb-card:hover { border-color: var(--rule2); transform: translateY(-1px); }
+.kb-card:hover::before { opacity: 1; }
+.kb-card.selected { border-color: var(--accent); }
+.kb-card.selected::before { opacity: 1; background: var(--accent); }
+
+.card-client {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.card-industry {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 9px;
+  line-height: 1.4;
+}
+.card-tags {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-bottom: 9px;
+}
+.tag {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .04em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: 400;
+}
+.tag-sbs { background: rgba(126,184,255,.12); color: var(--accent3); border: 1px solid rgba(126,184,255,.2); }
+.tag-custom { background: rgba(255,107,53,.12); color: var(--accent2); border: 1px solid rgba(255,107,53,.2); }
+.tag-branding { background: rgba(200,255,0,.1); color: var(--accent); border: 1px solid rgba(200,255,0,.18); }
+.tag-ecomm { background: rgba(61,220,132,.1); color: var(--success); border: 1px solid rgba(61,220,132,.2); }
+.tag-site { background: rgba(255,255,255,.06); color: var(--text3); border: 1px solid var(--rule2); }
+
+.card-team {
+  display: flex; align-items: center; gap: 4px;
+}
+.avatar-sm {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8.5px; font-weight: 600;
+  font-family: var(--font-mono);
+  border: 1px solid var(--rule2);
+  flex-shrink: 0;
+}
+
+/* research pulse */
+.kb-card.research-active::after {
+  content: 'BRIEF READY';
+  position: absolute; top: 10px; right: 10px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: .08em;
+  color: var(--accent);
+  background: rgba(200,255,0,.1);
+  border: 1px solid rgba(200,255,0,.25);
+  padding: 2px 6px;
+  border-radius: 3px;
+  animation: pulsebadge 2s ease-in-out infinite;
+}
+@keyframes pulsebadge {
+  0%,100% { opacity:.7; }
+  50% { opacity:1; }
+}
+
+/* ─── DETAIL PANEL ───────────────────────────────────── */
+#detail {
+  width: 360px;
+  min-width: 360px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  border-left: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+}
+#detail.hidden { display: none; }
+
+.detail-header {
+  padding: 20px 22px 0;
+  position: sticky; top: 0;
+  background: var(--bg);
+  z-index: 10;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 14px;
+}
+.detail-close {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.close-x {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r);
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 18px;
+  background: var(--surface2);
+  border: 1px solid var(--rule);
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.close-x:hover { color: var(--text); border-color: var(--rule2); }
+
+.detail-client {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.detail-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 10px;
+}
+.phase-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  padding: 3px 9px;
+  border-radius: 3px;
+  border: 1px solid var(--rule2);
+  color: var(--text2);
+  background: var(--surface3);
+  text-transform: uppercase;
+}
+
+.detail-body {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+
+.detail-section { display: flex; flex-direction: column; gap: 8px; }
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule);
+}
+.section-value {
+  font-size: 13.5px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+.section-value strong { color: var(--text); font-weight: 500; }
+
+/* pills */
+.pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--rule2);
+  color: var(--text2);
+  background: var(--surface2);
+  cursor: pointer;
+  transition: all .12s;
+}
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill a { color: inherit; text-decoration: none; }
+.pill.keyword { border-color: rgba(200,255,0,.25); color: var(--accent); background: rgba(200,255,0,.06); }
+.pill.keyword:hover { background: rgba(200,255,0,.12); }
+
+/* team row */
+.team-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.team-member {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--surface2);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  padding: 4px 10px 4px 5px;
+  font-size: 12px;
+  color: var(--text2);
+}
+.team-member.lead { border-color: var(--rule2); }
+.team-role {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  margin-left: 2px;
+}
+
+/* phase mover */
+.phase-mover {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap;
+}
+.phase-step {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: var(--r);
+  cursor: pointer;
+  border: 1px solid var(--rule);
+  color: var(--text3);
+  background: transparent;
+  transition: all .12s;
+  font-family: var(--font-mono);
+}
+.phase-step:hover { border-color: var(--rule2); color: var(--text2); }
+.phase-step.current { border-color: var(--accent); color: var(--accent); background: rgba(200,255,0,.07); }
+
+/* brief section */
+.brief-block {
+  background: var(--surface2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+}
+.brief-block .brief-title {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.brief-row { margin-bottom: 10px; }
+.brief-row-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .08em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.brief-row-val {
+  font-size: 12.5px;
+  color: var(--text2);
+  line-height: 1.55;
+}
+.avoid-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; }
+.avoid-pill {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(255,68,68,.1);
+  color: #ff7070;
+  border: 1px solid rgba(255,68,68,.2);
+}
+
+/* generating state */
+.generating {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px;
+  background: var(--surface2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text3);
+}
+.gen-dots {
+  display: flex; gap: 4px;
+}
+.gen-dots span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent);
+  animation: gendot .9s ease-in-out infinite;
+}
+.gen-dots span:nth-child(2) { animation-delay: .15s; }
+.gen-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes gendot {
+  0%,80%,100% { transform: scale(.5); opacity:.4; }
+  40% { transform: scale(1); opacity:1; }
+}
+
+/* empty state */
+.empty-col {
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-lg);
+  padding: 18px 12px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: .05em;
+}
+
+/* ─── MODAL ──────────────────────────────────────────── */
+#modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface2);
+  border: 1px solid var(--rule2);
+  border-radius: var(--r-lg);
+  padding: 28px 28px 24px;
+  max-width: 400px;
+  width: 90%;
+}
+.modal-title {
+  font-family: var(--font-head);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.modal-body { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ─── TOAST ──────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+  background: var(--surface3);
+  border: 1px solid var(--rule2);
+  border-radius: var(--r);
+  padding: 9px 18px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  z-index: 300;
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ─── INTAKE MODE TOGGLE ─────────────────────────── */
+.intake-toggle {
+  display: flex;
+  background: var(--surface3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 3px;
+  margin-bottom: 12px;
+}
+.intake-toggle-btn {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  transition: all .15s;
+  text-align: center;
+}
+.intake-toggle-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--rule2);
+}
+
+/* Manual form */
+.manual-form { display: none; flex-direction: column; gap: 8px; }
+.manual-form.visible { display: flex; }
+.form-row { display: flex; flex-direction: column; gap: 3px; }
+.form-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.form-input {
+  background: var(--surface2);
+  border: 1px solid var(--rule2);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  padding: 7px 10px;
+  width: 100%;
+  transition: border-color .15s;
+}
+.form-input:focus { outline: none; border-color: var(--accent); }
+.form-input::placeholder { color: var(--text3); }
+.form-input.small { font-size: 12px; padding: 6px 10px; }
+.form-select {
+  background: var(--surface2);
+  border: 1px solid var(--rule2);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 7px 10px;
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7870'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+.form-select:focus { outline: none; border-color: var(--accent); }
+.tag-checkboxes {
+  display: flex; flex-wrap: wrap; gap: 5px;
+}
+.tag-cb {
+  display: none;
+}
+.tag-cb-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 3px;
+  border: 1px solid var(--rule2);
+  color: var(--text3);
+  cursor: pointer;
+  transition: all .12s;
+  user-select: none;
+}
+.tag-cb:checked + .tag-cb-label {
+  border-color: rgba(200,255,0,.35);
+  color: var(--accent);
+  background: rgba(200,255,0,.08);
+}
+
+/* ─── RESPONSIVE DETAIL OVERLAY for narrow screens ── */
+@media (max-width: 900px) {
+  #detail {
+    position: fixed; right: 0; top: 52px;
+    z-index: 50;
+    background: var(--bg);
+    box-shadow: -8px 0 40px rgba(0,0,0,.5);
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── TOPBAR ──────────────────────────────────────── -->
+<div id="topbar">
+  <div class="logo">
+    <div class="logo-bell">
+      <span></span><span></span><span></span>
+    </div>
+    DING DING DING
+    <span class="logo-sub">/ design intelligence</span>
+  </div>
+  <div class="topbar-right">
+    <span id="client-count">0 clients</span>
+    <div id="api-status" data-tip="No API key set" onclick="focusApiKey()"></div>
+  </div>
+</div>
+
+<!-- ─── APP ────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+
+    <!-- Intake -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">New client intake</div>
+
+      <!-- Mode toggle -->
+      <div class="intake-toggle">
+        <button class="intake-toggle-btn active" id="toggle-ai" onclick="setIntakeMode('ai')">AI parse</button>
+        <button class="intake-toggle-btn" id="toggle-manual" onclick="setIntakeMode('manual')">Manual</button>
+      </div>
+
+      <!-- AI mode -->
+      <div id="intake-ai">
+        <textarea id="intake-area" placeholder="Paste sales announcement email here…
+
+e.g. &quot;Happy to share that we signed a new client: Acme Co. They're a startup building…&quot;"></textarea>
+        <button class="btn primary" id="parse-btn" onclick="parseEmail()" style="width:100%;margin-top:10px;justify-content:center;display:flex;">
+          <span id="parse-btn-text">Parse email</span>
+        </button>
+        <div id="parse-status"></div>
+      </div>
+
+      <!-- Manual mode -->
+      <div class="manual-form" id="intake-manual">
+        <div class="form-row">
+          <div class="form-label">Client name *</div>
+          <input class="form-input" id="m-name" placeholder="e.g. BTR Pouches" />
+        </div>
+        <div class="form-row">
+          <div class="form-label">Industry *</div>
+          <input class="form-input" id="m-industry" placeholder="e.g. nicotine pouches startup" />
+        </div>
+        <div class="form-row">
+          <div class="form-label">About the client</div>
+          <textarea class="form-input" id="m-desc" placeholder="What do they do? Who's the audience?" style="min-height:60px;resize:vertical;"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-label">Deliverables</div>
+          <input class="form-input" id="m-deliverables" placeholder="e.g. SBS Branding, E-commerce site" />
+        </div>
+        <div class="form-row">
+          <div class="form-label">Deal type</div>
+          <select class="form-select" id="m-dealtype">
+            <option value="SBS">SBS — Small Business Solution</option>
+            <option value="Custom">Custom Solution</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-label">Lead designer / strategist</div>
+          <input class="form-input small" id="m-lead" placeholder="e.g. Mariana" />
+        </div>
+        <div class="form-row">
+          <div class="form-label">Support team</div>
+          <input class="form-input small" id="m-support" placeholder="e.g. Lucas, Branko (comma separated)" />
+        </div>
+        <div class="form-row">
+          <div class="form-label">Value proposition / creative challenge</div>
+          <textarea class="form-input" id="m-valueprop" placeholder="What does this brand need to feel like?" style="min-height:60px;resize:vertical;"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-label">Design keywords (for Awwwards / Framer)</div>
+          <input class="form-input small" id="m-keywords" placeholder="e.g. bold DTC, luxury fintech minimal" />
+        </div>
+        <div class="form-row">
+          <div class="form-label">Tone direction</div>
+          <input class="form-input small" id="m-tone" placeholder="e.g. Bold, direct, edgy-clean" />
+        </div>
+        <div class="form-row">
+          <div class="form-label">Avoid</div>
+          <input class="form-input small" id="m-avoid" placeholder="e.g. pharma aesthetics, serif-heavy" />
+        </div>
+        <div class="form-row">
+          <div class="form-label">Tags</div>
+          <div class="tag-checkboxes">
+            <input type="checkbox" class="tag-cb" id="t-branding" value="branding"><label class="tag-cb-label" for="t-branding">branding</label>
+            <input type="checkbox" class="tag-cb" id="t-ecommerce" value="ecommerce"><label class="tag-cb-label" for="t-ecommerce">ecommerce</label>
+            <input type="checkbox" class="tag-cb" id="t-informational" value="informational"><label class="tag-cb-label" for="t-informational">informational</label>
+            <input type="checkbox" class="tag-cb" id="t-logo" value="logo"><label class="tag-cb-label" for="t-logo">logo</label>
+            <input type="checkbox" class="tag-cb" id="t-blog" value="blog"><label class="tag-cb-label" for="t-blog">blog</label>
+            <input type="checkbox" class="tag-cb" id="t-copy" value="copywriting"><label class="tag-cb-label" for="t-copy">copy</label>
+            <input type="checkbox" class="tag-cb" id="t-marketing" value="marketing"><label class="tag-cb-label" for="t-marketing">marketing</label>
+          </div>
+        </div>
+        <button class="btn primary" onclick="submitManual()" style="width:100%;justify-content:center;display:flex;">Add to pipeline</button>
+        <div id="manual-status" style="font-family:var(--font-mono);font-size:11px;color:var(--danger);margin-top:6px;min-height:16px;"></div>
+      </div>
+
+    </div>
+
+    <!-- Phase filter -->
+    <div class="sidebar-section" style="flex:1;">
+      <div class="sidebar-label">Pipeline</div>
+      <div class="phase-filter" id="phase-filter">
+        <button class="phase-btn active" data-phase="all" onclick="filterPhase('all', this)">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span class="phase-dot" style="background:var(--text3)"></span>
+            All clients
+          </span>
+          <span class="phase-count" id="count-all">0</span>
+        </button>
+        <button class="phase-btn" data-phase="Strategy" onclick="filterPhase('Strategy', this)">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span class="phase-dot" style="background:#7eb8ff"></span>
+            Strategy
+          </span>
+          <span class="phase-count" id="count-Strategy">0</span>
+        </button>
+        <button class="phase-btn" data-phase="Wireframes" onclick="filterPhase('Wireframes', this)">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span class="phase-dot" style="background:#c8a0ff"></span>
+            Wireframes
+          </span>
+          <span class="phase-count" id="count-Wireframes">0</span>
+        </button>
+        <button class="phase-btn" data-phase="Copy Signoff" onclick="filterPhase('Copy Signoff', this)">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span class="phase-dot" style="background:#ffb060"></span>
+            Copy Signoff
+          </span>
+          <span class="phase-count" id="count-Copy Signoff">0</span>
+        </button>
+        <button class="phase-btn" data-phase="Research" onclick="filterPhase('Research', this)">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span class="phase-dot" style="background:#c8ff00"></span>
+            Research
+          </span>
+          <span class="phase-count" id="count-Research">0</span>
+        </button>
+        <button class="phase-btn" data-phase="Moodboard" onclick="filterPhase('Moodboard', this)">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span class="phase-dot" style="background:#3ddc84"></span>
+            Moodboard
+          </span>
+          <span class="phase-count" id="count-Moodboard">0</span>
+        </button>
+        <button class="phase-btn" data-phase="Design" onclick="filterPhase('Design', this)">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span class="phase-dot" style="background:#ff6b35"></span>
+            Design
+          </span>
+          <span class="phase-count" id="count-Design">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- API Key -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Anthropic API key</div>
+      <input id="api-key-input" type="password" placeholder="sk-ant-…" oninput="onApiKeyChange()" />
+      <button class="btn btn-sm" id="api-key-save" onclick="saveApiKey()" style="margin-top:8px;width:100%;justify-content:center;display:flex;">Save key</button>
+    </div>
+
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="kanban-header">
+      <span class="kanban-title">CLIENT PIPELINE</span>
+      <span id="filter-label" style="font-family:var(--font-mono);font-size:11px;color:var(--text3);">Showing all</span>
+    </div>
+    <div id="kanban-board"></div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div id="detail" class="hidden">
+    <div class="detail-header">
+      <div class="detail-close">
+        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;">Client brief</span>
+        <div class="close-x" onclick="closeDetail()">×</div>
+      </div>
+      <div class="detail-client" id="d-name">—</div>
+      <div class="detail-meta" id="d-meta">—</div>
+      <div id="d-phase-badge"></div>
+    </div>
+    <div class="detail-body" id="d-body"></div>
+  </div>
+
+</div>
+
+<!-- ─── MODAL ──────────────────────────────────────── -->
+<div id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Confirm</div>
+    <div class="modal-body" id="modal-body">Are you sure?</div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-sm primary" id="modal-confirm-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST ──────────────────────────────────────── -->
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════ */
+const STORAGE_KEY = 'ddd_clients_v2';
+const API_KEY_STORAGE = 'ddd_api_key';
+const PHASES = ['Strategy','Wireframes','Copy Signoff','Research','Moodboard','Design'];
+const PHASE_COLORS = {
+  'Strategy':     '#7eb8ff',
+  'Wireframes':   '#c8a0ff',
+  'Copy Signoff': '#ffb060',
+  'Research':     '#c8ff00',
+  'Moodboard':    '#3ddc84',
+  'Design':       '#ff6b35',
+};
+
+let clients = [];
+let selectedId = null;
+let activeFilter = 'all';
+
+/* ══════════════════════════════════════════════════
+   INTAKE MODE
+══════════════════════════════════════════════════ */
+function setIntakeMode(mode) {
+  document.getElementById('intake-ai').style.display = mode === 'ai' ? 'block' : 'none';
+  document.getElementById('intake-manual').classList.toggle('visible', mode === 'manual');
+  document.getElementById('toggle-ai').classList.toggle('active', mode === 'ai');
+  document.getElementById('toggle-manual').classList.toggle('active', mode === 'manual');
+}
+
+function submitManual() {
+  const name = document.getElementById('m-name').value.trim();
+  const industry = document.getElementById('m-industry').value.trim();
+  if (!name || !industry) {
+    document.getElementById('manual-status').textContent = 'Client name and industry are required.';
+    return;
+  }
+  document.getElementById('manual-status').textContent = '';
+
+  const deliverables = document.getElementById('m-deliverables').value
+    .split(',').map(s => s.trim()).filter(Boolean);
+  const support = document.getElementById('m-support').value
+    .split(',').map(s => s.trim()).filter(Boolean);
+  const keywords = document.getElementById('m-keywords').value
+    .split(',').map(s => s.trim()).filter(Boolean);
+  const avoid = document.getElementById('m-avoid').value
+    .split(',').map(s => s.trim()).filter(Boolean);
+  const tags = [...document.querySelectorAll('.tag-cb:checked')].map(el => el.value);
+
+  const newClient = {
+    id: 'c_' + Date.now(),
+    clientName: name,
+    industry: industry,
+    businessDescription: document.getElementById('m-desc').value.trim() || '',
+    deliverables: deliverables,
+    dealType: document.getElementById('m-dealtype').value,
+    teamLead: document.getElementById('m-lead').value.trim() || '',
+    teamSupport: support,
+    valueProposition: document.getElementById('m-valueprop').value.trim() || '',
+    designKeywords: keywords,
+    toneDirection: document.getElementById('m-tone').value.trim() || '',
+    typographyHint: '',
+    animationHint: '',
+    avoidList: avoid,
+    tags: tags,
+    phase: 'Strategy',
+    createdAt: new Date().toISOString(),
+    brief: null,
+  };
+
+  clients.unshift(newClient);
+  save();
+  renderBoard();
+
+  // Clear form
+  ['m-name','m-industry','m-desc','m-deliverables','m-lead','m-support',
+   'm-valueprop','m-keywords','m-tone','m-avoid'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('.tag-cb').forEach(el => el.checked = false);
+
+  showToast('✦ ' + newClient.clientName + ' added to pipeline');
+  selectClient(newClient.id);
+}
+
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+function init() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try { clients = JSON.parse(raw); } catch(e) { clients = []; }
+  }
+  const savedKey = localStorage.getItem(API_KEY_STORAGE);
+  if (savedKey) {
+    document.getElementById('api-key-input').value = savedKey;
+    updateApiStatus(true);
+  }
+  // Set default intake mode
+  setIntakeMode('ai');
+  renderBoard();
+  updateCounts();
+}
+
+/* ══════════════════════════════════════════════════
+   PERSIST
+══════════════════════════════════════════════════ */
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+  updateCounts();
+  document.getElementById('client-count').textContent =
+    clients.length + ' client' + (clients.length !== 1 ? 's' : '');
+}
+
+/* ══════════════════════════════════════════════════
+   API KEY
+══════════════════════════════════════════════════ */
+function saveApiKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val) return;
+  localStorage.setItem(API_KEY_STORAGE, val);
+  updateApiStatus(true);
+  showToast('API key saved');
+}
+function getApiKey() {
+  return localStorage.getItem(API_KEY_STORAGE) || '';
+}
+function updateApiStatus(ok) {
+  const el = document.getElementById('api-status');
+  el.classList.toggle('ok', ok);
+  el.setAttribute('data-tip', ok ? 'API key set — ready' : 'No API key set');
+}
+function onApiKeyChange() {
+  const val = document.getElementById('api-key-input').value.trim();
+  updateApiStatus(!!val && val.startsWith('sk-ant'));
+}
+function focusApiKey() {
+  document.getElementById('api-key-input').focus();
+}
+
+/* ══════════════════════════════════════════════════
+   PARSE EMAIL
+══════════════════════════════════════════════════ */
+async function parseEmail() {
+  const emailText = document.getElementById('intake-area').value.trim();
+  if (!emailText) { showToast('Paste an email first'); return; }
+  const apiKey = getApiKey();
+  if (!apiKey) { showToast('No API key — switch to Manual mode'); setIntakeMode('manual'); return; }
+
+  setParseState('loading', 'Parsing email…');
+
+  const systemPrompt = `You are a design agency intake agent. Your job is to extract structured data from sales announcement emails and generate design intelligence for the design team.
+
+Extract the following from the email and return ONLY a JSON object (no markdown, no explanation):
+
+{
+  "clientName": "string — the client's business name",
+  "industry": "string — short industry/sector description (max 8 words)",
+  "businessDescription": "string — what the client does (1-2 sentences)",
+  "deliverables": ["array of deliverables mentioned"],
+  "dealType": "SBS or Custom — SBS means Small Business Solution, Custom means bespoke",
+  "teamLead": "string — name of the lead designer/strategist",
+  "teamSupport": ["array of support team member names"],
+  "valueProposition": "string — the core brand promise or positioning this client needs (2-3 sentences, written for a designer to understand the creative challenge)",
+  "designKeywords": [
+    "keyword 1 — a specific, searchable term for Awwwards/Framer/Webflow (e.g. 'bold DTC ecommerce', 'luxury fintech minimal', 'health tech approachable')",
+    "keyword 2",
+    "keyword 3"
+  ],
+  "toneDirection": "string — tone of voice for the brand (2-3 adjectives + brief explanation)",
+  "typographyHint": "string — typography direction (specific font family suggestions + rationale, 1-2 sentences)",
+  "animationHint": "string — animation/motion guidance for the website (1 sentence)",
+  "avoidList": ["thing to avoid 1", "thing to avoid 2", "thing to avoid 3"],
+  "tags": ["array of relevant tags from: branding, ecommerce, informational, logo, blog, copywriting, strategy, marketing"]
+}
+
+Be specific and actionable. Design keywords must be searchable on design inspiration sites. The value proposition should give a designer a clear creative direction.`;
+
+  try {
+    const resp = await callClaude(systemPrompt, emailText, apiKey);
+    const parsed = JSON.parse(resp);
+
+    const newClient = {
+      id: 'c_' + Date.now(),
+      ...parsed,
+      phase: 'Strategy',
+      createdAt: new Date().toISOString(),
+      brief: null,
+    };
+    clients.unshift(newClient);
+    save();
+    renderBoard();
+    document.getElementById('intake-area').value = '';
+    setParseState('', '');
+    showToast('✦ ' + newClient.clientName + ' added to pipeline');
+    selectClient(newClient.id);
+  } catch(e) {
+    console.error(e);
+    setParseState('error', 'Parse failed — check API key or email format');
+  }
+}
+
+function setParseState(state, msg) {
+  const btn = document.getElementById('parse-btn');
+  const txt = document.getElementById('parse-btn-text');
+  const status = document.getElementById('parse-status');
+  btn.disabled = state === 'loading';
+  txt.textContent = state === 'loading' ? 'Parsing…' : 'Parse email';
+  status.textContent = msg;
+  status.style.color = state === 'error' ? 'var(--danger)' : 'var(--text3)';
+}
+
+/* ══════════════════════════════════════════════════
+   CLAUDE API
+══════════════════════════════════════════════════ */
+async function callClaude(system, userMsg, apiKey) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      system: system,
+      messages: [{ role: 'user', content: userMsg }],
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.json();
+    throw new Error(err.error?.message || resp.statusText);
+  }
+  const data = await resp.json();
+  return data.content[0].text.trim();
+}
+
+/* ══════════════════════════════════════════════════
+   GENERATE BRIEF (Research phase)
+══════════════════════════════════════════════════ */
+async function generateBrief(clientId) {
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  const apiKey = getApiKey();
+  if (!apiKey) { showToast('Set your API key first'); return; }
+
+  c.briefLoading = true;
+  renderDetail(c);
+  save();
+
+  const systemPrompt = `You are a senior creative director briefing a web designer. Given client intake data, produce a detailed moodboard preparation document. Return ONLY JSON (no markdown):
+
+{
+  "summary": {
+    "approach": "string — overall creative approach, 2-3 sentences",
+    "tone": "string — tone and personality",
+    "typographyDirection": "string — specific font families to explore + why",
+    "animationStyle": "string — motion design guidance",
+    "goal": "string — what the website must achieve for the business",
+    "avoid": ["avoid 1", "avoid 2", "avoid 3", "avoid 4"]
+  },
+  "searchKeywords": {
+    "awwwards": ["3 specific search terms for awwwards.com/inspiration_search"],
+    "webflow": ["3 specific search terms for webflow.com/templates"],
+    "framer": ["3 specific search terms for framer.com/marketplace"]
+  },
+  "imageryDirection": {
+    "heroImagery": "string — what the hero section imagery should feel like",
+    "stockSearchTerms": ["4-5 specific search terms for Unsplash/Getty/iStock"],
+    "moodDescriptors": ["4-6 adjectives that define the visual mood"]
+  },
+  "colorPaletteDirection": {
+    "dominantColor": "string — dominant color description (not hex, describe the feeling)",
+    "accentColor": "string — accent color description",
+    "textColor": "string — text/neutral color direction",
+    "avoidColors": ["colors to avoid"]
+  },
+  "typographyPairings": [
+    {
+      "heading": "font name",
+      "body": "font name",
+      "rationale": "why this pairing works for this brand"
+    },
+    {
+      "heading": "font name",
+      "body": "font name",
+      "rationale": "why this pairing works"
+    }
+  ],
+  "competitorContext": "string — 2-3 sentences about how competitors typically look and how this client should differentiate",
+  "researchDirections": "string — what 10 reference sites to look for (types, not specific URLs), and what to look for in each"
+}`;
+
+  const userMsg = JSON.stringify({
+    clientName: c.clientName,
+    industry: c.industry,
+    businessDescription: c.businessDescription,
+    deliverables: c.deliverables,
+    dealType: c.dealType,
+    valueProposition: c.valueProposition,
+    toneDirection: c.toneDirection,
+    typographyHint: c.typographyHint,
+    animationHint: c.animationHint,
+    avoidList: c.avoidList,
+    tags: c.tags,
+  });
+
+  try {
+    const resp = await callClaude(systemPrompt, userMsg, apiKey);
+    c.brief = JSON.parse(resp);
+    c.briefLoading = false;
+    const idx = clients.findIndex(x => x.id === clientId);
+    if (idx !== -1) clients[idx] = c;
+    save();
+    renderBoard();
+    renderDetail(c);
+    showToast('Brief generated for ' + c.clientName);
+  } catch(e) {
+    console.error(e);
+    c.briefLoading = false;
+    save();
+    renderDetail(c);
+    showToast('Brief generation failed');
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   RENDER BOARD
+══════════════════════════════════════════════════ */
+function renderBoard() {
+  const board = document.getElementById('kanban-board');
+  board.innerHTML = '';
+
+  const visibleClients = activeFilter === 'all'
+    ? clients
+    : clients.filter(c => c.phase === activeFilter);
+
+  PHASES.forEach(phase => {
+    const col = document.createElement('div');
+    col.className = 'kb-col';
+
+    const phaseClients = visibleClients.filter(c => c.phase === phase);
+
+    col.innerHTML = `
+      <div class="kb-col-head">
+        <span class="kb-col-name">
+          <span class="col-dot" style="background:${PHASE_COLORS[phase]}"></span>
+          ${phase}
+        </span>
+        <span class="kb-count">${phaseClients.length}</span>
+      </div>
+    `;
+
+    if (phaseClients.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-col';
+      empty.textContent = 'empty';
+      col.appendChild(empty);
+    } else {
+      phaseClients.forEach(c => {
+        const card = buildCard(c);
+        col.appendChild(card);
+      });
+    }
+
+    board.appendChild(col);
+  });
+
+  updateCounts();
+}
+
+function buildCard(c) {
+  const card = document.createElement('div');
+  card.className = 'kb-card' +
+    (c.id === selectedId ? ' selected' : '') +
+    (c.phase === 'Research' ? ' research-active' : '');
+
+  const tagHtml = buildTagHtml(c);
+  const teamHtml = buildTeamAvatars(c);
+
+  card.innerHTML = `
+    <div class="card-client">${c.clientName}</div>
+    <div class="card-industry">${c.industry}</div>
+    <div class="card-tags">${tagHtml}</div>
+    <div class="card-team">${teamHtml}</div>
+  `;
+  card.onclick = () => selectClient(c.id);
+  return card;
+}
+
+function buildTagHtml(c) {
+  let html = '';
+  html += `<span class="tag ${c.dealType === 'SBS' ? 'tag-sbs' : 'tag-custom'}">${c.dealType}</span>`;
+  if (c.tags) {
+    c.tags.slice(0, 2).forEach(t => {
+      const cls = t === 'branding' ? 'tag-branding' : t === 'ecommerce' ? 'tag-ecomm' : 'tag-site';
+      html += `<span class="tag ${cls}">${t}</span>`;
+    });
+  }
+  return html;
+}
+
+function buildTeamAvatars(c) {
+  let html = '';
+  if (c.teamLead) html += `<div class="avatar-sm" style="background:rgba(200,255,0,.1);border-color:rgba(200,255,0,.2);color:var(--accent);">${initials(c.teamLead)}</div>`;
+  if (c.teamSupport) c.teamSupport.slice(0, 2).forEach(name => {
+    html += `<div class="avatar-sm" style="background:var(--surface3);color:var(--text3);">${initials(name)}</div>`;
+  });
+  return html;
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
+/* ══════════════════════════════════════════════════
+   DETAIL PANEL
+══════════════════════════════════════════════════ */
+function selectClient(id) {
+  selectedId = id;
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  renderBoard();
+  renderDetail(c);
+  document.getElementById('detail').classList.remove('hidden');
+}
+
+function closeDetail() {
+  selectedId = null;
+  document.getElementById('detail').classList.add('hidden');
+  renderBoard();
+}
+
+function renderDetail(c) {
+  document.getElementById('d-name').textContent = c.clientName;
+  document.getElementById('d-meta').textContent = c.industry + ' · ' + c.dealType;
+  document.getElementById('d-phase-badge').innerHTML = `
+    <div class="phase-badge">
+      <span style="width:6px;height:6px;border-radius:50%;background:${PHASE_COLORS[c.phase]};display:inline-block;"></span>
+      ${c.phase}
+    </div>
+  `;
+
+  const body = document.getElementById('d-body');
+  body.innerHTML = '';
+
+  // Value prop
+  body.appendChild(section('Value proposition', `<div class="section-value">${c.valueProposition || '—'}</div>`));
+
+  // Business desc
+  body.appendChild(section('About', `<div class="section-value">${c.businessDescription || '—'}</div>`));
+
+  // Deliverables
+  if (c.deliverables && c.deliverables.length) {
+    const pills = c.deliverables.map(d => `<span class="pill">${d}</span>`).join('');
+    body.appendChild(section('Deliverables', `<div class="pill-row">${pills}</div>`));
+  }
+
+  // Team
+  const teamHtml = buildTeamSection(c);
+  body.appendChild(section('Team', teamHtml));
+
+  // Phase mover
+  body.appendChild(buildPhaseMover(c));
+
+  // Design keywords
+  if (c.designKeywords && c.designKeywords.length) {
+    const pills = c.designKeywords.map(k => {
+      const q = encodeURIComponent(k);
+      return `<span class="pill keyword" onclick="openLinks('${q}')" title="Open search on Awwwards + Framer">${k} ↗</span>`;
+    }).join('');
+    body.appendChild(section('Design search keywords', `<div class="pill-row">${pills}</div>`));
+  }
+
+  // Tone + Typography + Animation
+  const dirHtml = `
+    <div class="brief-block">
+      <div class="brief-row">
+        <div class="brief-row-label">Tone</div>
+        <div class="brief-row-val">${c.toneDirection || '—'}</div>
+      </div>
+      <div class="brief-row">
+        <div class="brief-row-label">Typography hint</div>
+        <div class="brief-row-val">${c.typographyHint || '—'}</div>
+      </div>
+      <div class="brief-row">
+        <div class="brief-row-label">Animation</div>
+        <div class="brief-row-val">${c.animationHint || '—'}</div>
+      </div>
+    </div>
+  `;
+  const dirSection = document.createElement('div');
+  dirSection.className = 'detail-section';
+  const dirLabel = document.createElement('div');
+  dirLabel.className = 'section-label';
+  dirLabel.textContent = 'Design direction';
+  dirSection.appendChild(dirLabel);
+  dirSection.innerHTML += dirHtml;
+  body.appendChild(dirSection);
+
+  // Avoid
+  if (c.avoidList && c.avoidList.length) {
+    const pills = c.avoidList.map(a => `<span class="avoid-pill">${a}</span>`).join('');
+    body.appendChild(section('Avoid', `<div class="avoid-pills">${pills}</div>`));
+  }
+
+  // Brief section
+  body.appendChild(buildBriefSection(c));
+
+  // Delete
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn btn-sm';
+  delBtn.style.cssText = 'width:100%;justify-content:center;display:flex;margin-top:8px;color:var(--danger);border-color:rgba(255,68,68,.2);';
+  delBtn.textContent = 'Remove client';
+  delBtn.onclick = () => confirmDelete(c.id);
+  body.appendChild(delBtn);
+}
+
+function section(label, innerHtml) {
+  const el = document.createElement('div');
+  el.className = 'detail-section';
+  el.innerHTML = `<div class="section-label">${label}</div>${innerHtml}`;
+  return el;
+}
+
+function buildTeamSection(c) {
+  let html = '<div class="team-row">';
+  if (c.teamLead) {
+    html += `<div class="team-member lead">
+      <div class="avatar-sm" style="background:rgba(200,255,0,.1);border-color:rgba(200,255,0,.2);color:var(--accent);">${initials(c.teamLead)}</div>
+      ${c.teamLead}<span class="team-role">lead</span>
+    </div>`;
+  }
+  if (c.teamSupport) c.teamSupport.forEach(name => {
+    html += `<div class="team-member">
+      <div class="avatar-sm">${initials(name)}</div>
+      ${name}
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function buildPhaseMover(c) {
+  const wrap = document.createElement('div');
+  wrap.className = 'detail-section';
+  wrap.innerHTML = `<div class="section-label">Move phase</div>`;
+  const row = document.createElement('div');
+  row.className = 'phase-mover';
+  PHASES.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'phase-step' + (c.phase === p ? ' current' : '');
+    btn.textContent = p;
+    btn.onclick = () => movePhase(c.id, p);
+    row.appendChild(btn);
+  });
+  wrap.appendChild(row);
+  return wrap;
+}
+
+function buildBriefSection(c) {
+  const wrap = document.createElement('div');
+  wrap.className = 'detail-section';
+  const lbl = document.createElement('div');
+  lbl.className = 'section-label';
+  lbl.textContent = 'Moodboard brief';
+  wrap.appendChild(lbl);
+
+  if (c.phase !== 'Research' && c.phase !== 'Moodboard' && c.phase !== 'Design') {
+    const note = document.createElement('div');
+    note.style.cssText = 'font-family:var(--font-mono);font-size:11px;color:var(--text3);padding:12px;background:var(--surface2);border:1px solid var(--rule);border-radius:var(--r-lg);';
+    note.textContent = 'Brief generates automatically when card reaches Research phase.';
+    wrap.appendChild(note);
+    return wrap;
+  }
+
+  if (c.briefLoading) {
+    wrap.innerHTML += `<div class="generating"><div class="gen-dots"><span></span><span></span><span></span></div>Generating moodboard brief…</div>`;
+    return wrap;
+  }
+
+  if (!c.brief) {
+    const genBtn = document.createElement('button');
+    genBtn.className = 'btn btn-sm primary';
+    genBtn.style.cssText = 'width:100%;justify-content:center;display:flex;';
+    genBtn.textContent = 'Generate moodboard brief';
+    genBtn.onclick = () => generateBrief(c.id);
+    wrap.appendChild(genBtn);
+    return wrap;
+  }
+
+  // Render brief
+  const b = c.brief;
+  let html = '<div class="brief-block">';
+  html += `<div class="brief-title">✦ Moodboard Prep</div>`;
+
+  if (b.summary) {
+    html += `<div class="brief-row"><div class="brief-row-label">Approach</div><div class="brief-row-val">${b.summary.approach}</div></div>`;
+    html += `<div class="brief-row"><div class="brief-row-label">Goal</div><div class="brief-row-val">${b.summary.goal}</div></div>`;
+    html += `<div class="brief-row"><div class="brief-row-label">Typography</div><div class="brief-row-val">${b.summary.typographyDirection}</div></div>`;
+    html += `<div class="brief-row"><div class="brief-row-label">Animation</div><div class="brief-row-val">${b.summary.animationStyle}</div></div>`;
+    if (b.summary.avoid) {
+      const avoids = b.summary.avoid.map(a => `<span class="avoid-pill">${a}</span>`).join('');
+      html += `<div class="brief-row"><div class="brief-row-label">Avoid</div><div class="avoid-pills">${avoids}</div></div>`;
+    }
+  }
+
+  if (b.searchKeywords) {
+    html += `<div class="brief-row"><div class="brief-row-label">Awwwards searches</div><div class="pill-row">`;
+    (b.searchKeywords.awwwards || []).forEach(k => {
+      const url = `https://www.awwwards.com/inspiration_search/?text=${encodeURIComponent(k)}`;
+      html += `<span class="pill keyword" onclick="window.open('${url}','_blank')">${k} ↗</span>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div class="brief-row"><div class="brief-row-label">Webflow templates</div><div class="pill-row">`;
+    (b.searchKeywords.webflow || []).forEach(k => {
+      const url = `https://webflow.com/templates?search=${encodeURIComponent(k)}`;
+      html += `<span class="pill keyword" onclick="window.open('${url}','_blank')">${k} ↗</span>`;
+    });
+    html += `</div></div>`;
+
+    html += `<div class="brief-row"><div class="brief-row-label">Framer marketplace</div><div class="pill-row">`;
+    (b.searchKeywords.framer || []).forEach(k => {
+      const url = `https://www.framer.com/marketplace/?search=${encodeURIComponent(k)}`;
+      html += `<span class="pill keyword" onclick="window.open('${url}','_blank')">${k} ↗</span>`;
+    });
+    html += `</div></div>`;
+  }
+
+  if (b.imageryDirection) {
+    if (b.imageryDirection.moodDescriptors) {
+      const moods = b.imageryDirection.moodDescriptors.map(m => `<span class="pill">${m}</span>`).join('');
+      html += `<div class="brief-row"><div class="brief-row-label">Visual mood</div><div class="pill-row">${moods}</div></div>`;
+    }
+    html += `<div class="brief-row"><div class="brief-row-label">Hero imagery</div><div class="brief-row-val">${b.imageryDirection.heroImagery}</div></div>`;
+    if (b.imageryDirection.stockSearchTerms) {
+      const terms = b.imageryDirection.stockSearchTerms.map(t => {
+        const url = `https://unsplash.com/s/photos/${encodeURIComponent(t)}`;
+        return `<span class="pill" onclick="window.open('${url}','_blank')">${t} ↗</span>`;
+      }).join('');
+      html += `<div class="brief-row"><div class="brief-row-label">Stock searches (Unsplash)</div><div class="pill-row">${terms}</div></div>`;
+    }
+  }
+
+  if (b.colorPaletteDirection) {
+    const cp = b.colorPaletteDirection;
+    html += `<div class="brief-row"><div class="brief-row-label">Colour palette direction</div>
+      <div class="brief-row-val">
+        <strong>Dominant:</strong> ${cp.dominantColor}<br>
+        <strong>Accent:</strong> ${cp.accentColor}<br>
+        <strong>Text/neutral:</strong> ${cp.textColor}
+      </div></div>`;
+  }
+
+  if (b.typographyPairings && b.typographyPairings.length) {
+    html += `<div class="brief-row"><div class="brief-row-label">Typography pairings</div>`;
+    b.typographyPairings.forEach(p => {
+      html += `<div class="brief-row-val" style="margin-bottom:6px;"><strong>${p.heading}</strong> + ${p.body}<br><span style="color:var(--text3);font-size:11.5px;">${p.rationale}</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (b.competitorContext) {
+    html += `<div class="brief-row"><div class="brief-row-label">Competitor context</div><div class="brief-row-val">${b.competitorContext}</div></div>`;
+  }
+
+  if (b.researchDirections) {
+    html += `<div class="brief-row"><div class="brief-row-label">Research guidance (10 refs)</div><div class="brief-row-val">${b.researchDirections}</div></div>`;
+  }
+
+  html += `</div>`;
+
+  const inner = document.createElement('div');
+  inner.innerHTML = html;
+  wrap.appendChild(inner);
+
+  return wrap;
+}
+
+/* ══════════════════════════════════════════════════
+   PHASE MOVEMENT
+══════════════════════════════════════════════════ */
+function movePhase(id, newPhase) {
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  const oldPhase = c.phase;
+  c.phase = newPhase;
+  save();
+  renderBoard();
+  renderDetail(c);
+  showToast(c.clientName + ' → ' + newPhase);
+
+  // Auto-trigger brief generation when entering Research
+  if (newPhase === 'Research' && !c.brief && !c.briefLoading) {
+    setTimeout(() => generateBrief(id), 600);
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   FILTER
+══════════════════════════════════════════════════ */
+function filterPhase(phase, btn) {
+  activeFilter = phase;
+  document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('filter-label').textContent =
+    phase === 'all' ? 'Showing all' : 'Showing: ' + phase;
+  renderBoard();
+}
+
+function updateCounts() {
+  const label = document.getElementById('client-count');
+  if (label) label.textContent = clients.length + ' client' + (clients.length !== 1 ? 's' : '');
+
+  document.getElementById('count-all').textContent = clients.length;
+  PHASES.forEach(p => {
+    const el = document.getElementById('count-' + p);
+    if (el) el.textContent = clients.filter(c => c.phase === p).length;
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   LINKS
+══════════════════════════════════════════════════ */
+function openLinks(query) {
+  window.open('https://www.awwwards.com/inspiration_search/?text=' + query, '_blank');
+}
+
+/* ══════════════════════════════════════════════════
+   DELETE
+══════════════════════════════════════════════════ */
+function confirmDelete(id) {
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('modal-title').textContent = 'Remove ' + c.clientName + '?';
+  document.getElementById('modal-body').textContent = 'This will permanently remove this client from the pipeline. This cannot be undone.';
+  document.getElementById('modal-confirm-btn').onclick = () => {
+    clients = clients.filter(x => x.id !== id);
+    save();
+    renderBoard();
+    closeDetail();
+    closeModal();
+    showToast('Client removed');
+  };
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+/* ══════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ══════════════════════════════════════════════════
+   SEED DATA (demo clients)
+══════════════════════════════════════════════════ */
+function seedDemoData() {
+  if (clients.length > 0) return;
+  clients = [
+    {
+      id: 'demo_1',
+      clientName: 'BTR Pouches',
+      industry: 'Consumer goods — nicotine pouches startup',
+      businessDescription: 'A startup brand entering the nicotine pouches market, competing with established players like ZYN and On! with a bold DTC positioning.',
+      deliverables: ['SBS Branding', 'SBS E-commerce site'],
+      dealType: 'SBS',
+      teamLead: 'Mariana',
+      teamSupport: [],
+      valueProposition: 'Bold DTC lifestyle brand for a disruptive nicotine alternatives startup. Needs to feel premium and credible without the clinical healthcare aesthetic — closer to beverage branding than pharma.',
+      designKeywords: ['bold DTC ecommerce packaging', 'lifestyle consumer goods minimal', 'nicotine wellness brand identity'],
+      toneDirection: 'Bold, direct, edgy-clean. Not clinical, not stoner culture. Think White Claw meets ZYN.',
+      typographyHint: 'Geometric sans with strong weight contrast — Neue Haas Grotesk, Matter, or ABC Diatype. Tight tracking on display text.',
+      animationHint: 'Subtle product reveals and parallax on hero. Nothing distracting on product pages.',
+      avoidList: ['Medical/pharma aesthetics', 'Stock wellness photography clichés', 'Heavy serif-led layouts'],
+      tags: ['branding', 'ecommerce'],
+      phase: 'Research',
+      createdAt: new Date().toISOString(),
+      brief: null,
+    },
+    {
+      id: 'demo_2',
+      clientName: 'Pack & Slay',
+      industry: 'Amazon FBA prep — logistics & fulfillment',
+      businessDescription: 'An Amazon FBA prep company specializing in preparing products for Amazon shipments, targeting FBA sellers who need reliable prep services.',
+      deliverables: ['SBS Brand strategy', 'Logo', 'SBS Informational site'],
+      dealType: 'SBS',
+      teamLead: 'Lucas',
+      teamSupport: ['Branko'],
+      valueProposition: 'Aggressive, results-oriented fulfillment brand that stands out in a commoditized logistics category. The name itself — Pack & Slay — signals confidence and edge.',
+      designKeywords: ['bold logistics operations branding', 'B2B startup aggressive identity', 'Amazon seller service industrial'],
+      toneDirection: 'Confident, punchy, operational. The name sets the register — lean into the energy without becoming cartoonish.',
+      typographyHint: 'Extended or condensed grotesque — Barlow Condensed, Oswald, or Dharma Gothic. Bold numerics for stat callouts.',
+      animationHint: 'Counter animations on stats, fast loading states. Speed is part of the brand promise.',
+      avoidList: ['Generic warehouse/box/truck imagery', 'Corporate consulting aesthetics', 'Pastel or muted palettes'],
+      tags: ['branding', 'informational'],
+      phase: 'Copy Signoff',
+      createdAt: new Date().toISOString(),
+      brief: null,
+    },
+    {
+      id: 'demo_3',
+      clientName: 'The Food Partners',
+      industry: 'Food investment banking & M&A advisory',
+      businessDescription: 'A food-focused investment banking and M&A advisory firm serving food and beverage companies seeking capital, acquisitions, or exits.',
+      deliverables: ['SBS Informational website'],
+      dealType: 'SBS',
+      teamLead: 'Silvio',
+      teamSupport: ['Ana'],
+      valueProposition: 'Premium advisory firm bridging the food industry with institutional finance. Needs the gravitas of a bulge-bracket bank with the warmth and specificity of a food-world insider.',
+      designKeywords: ['luxury financial advisory editorial', 'premium investment banking minimal', 'food industry corporate identity'],
+      toneDirection: 'Authoritative, refined, understated. McKinsey-level credibility with the warmth of a sommelier.',
+      typographyHint: 'Editorial serif for headings — Canela, Freight Display, or Domaine. Clean humanist sans (Aktiv Grotesk, Söhne) for body.',
+      animationHint: 'Minimal — slow fade-ins only. No gimmicks. Restrained parallax on hero at most.',
+      avoidList: ['Foodie/restaurant visual language', 'Startup or tech aesthetics', 'Bright saturated palettes'],
+      tags: ['informational', 'strategy'],
+      phase: 'Wireframes',
+      createdAt: new Date().toISOString(),
+      brief: null,
+    },
+    {
+      id: 'demo_4',
+      clientName: 'Legacy Wire',
+      industry: 'B2B wiring & cabling distribution — Texas',
+      businessDescription: 'A family business selling and distributing wiring and cabling to businesses across Texas, with a heritage positioning and regional pride.',
+      deliverables: ['SBS Website'],
+      dealType: 'SBS',
+      teamLead: 'Lucas',
+      teamSupport: ['Branko'],
+      valueProposition: 'Family heritage combined with industrial reliability. A brand that communicates solidity and trust built over generations — not flashy, but lasting.',
+      designKeywords: ['industrial heritage B2B brand', 'family business manufacturing identity', 'Texas trades professional site'],
+      toneDirection: 'Solid, dependable, Texan. The weight of experience without looking dated or dusty.',
+      typographyHint: 'Strong slab serif or industrial grotesque — Rockwell, Clarendon, or Replica. Paired with a clean readable sans for body copy.',
+      animationHint: 'Minimal — clean product/category filters with no visual noise.',
+      avoidList: ['Clipart lightning bolts or electrical icons', 'Overly digital startup aesthetics', 'Generic blue corporate palette'],
+      tags: ['informational'],
+      phase: 'Moodboard',
+      createdAt: new Date().toISOString(),
+      brief: null,
+    },
+  ];
+  save();
+  renderBoard();
+}
+
+/* ══════════════════════════════════════════════════
+   KEYBOARD
+══════════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeDetail();
+    closeModal();
+  }
+});
+
+/* ══════════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════════ */
+init();
+seedDemoData();
+</script>
+</body>
+</html>
