@@ -1,13 +1,13 @@
 # 🔔 Ding Ding Ding
 ### Design Intelligence for a Digital Growth Agency
 
-A single-file internal tool for design teams to catalog incoming clients, track them through the pipeline, and auto-generate moodboard briefs — powered by Claude AI.
+A single-file internal tool for design teams to catalog incoming clients, track them through the pipeline, and auto-generate moodboard briefs.
 
 ---
 
 ## What it does
 
-1. **Paste a sales email** → Claude extracts the client profile, deliverables, team, value prop, and design direction in seconds
+1. **Paste a sales email** → AI extracts the client profile, deliverables, team, value prop, and design direction in seconds
 2. **Kanban pipeline** → Tracks every client across: Strategy → Wireframes → Copy Signoff → Research → Moodboard → Design
 3. **Auto-generates moodboard brief** when a card reaches the **Research** phase — complete with:
    - Awwwards, Webflow, and Framer search keywords (clickable links)
